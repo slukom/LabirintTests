@@ -54,8 +54,8 @@ def test_login_with_invalid_symbol(driver, invalid_symbol):
 
 # test3 Проверка валидации логина при вводе некорректного кода
 @pytest.mark.negative
-def test_login_with_invalid_value():
-    page = MainPage(pytest.driver)
+def test_login_with_invalid_code(driver):
+    page = MainPage(driver)
     page.main_cabinet.wait_to_be_clickable()
     page.main_cabinet.click()
 
@@ -71,8 +71,8 @@ def test_login_with_invalid_value():
 
 # test4 Проверка валидации логина при вводе некорректного номера телефона
 @pytest.mark.negative
-def test_login_with_invalid_value():
-    page = MainPage(pytest.driver)
+def test_login_with_invalid_tel_number(driver):
+    page = MainPage(driver)
     page.main_cabinet.wait_to_be_clickable()
     page.main_cabinet.click()
 
@@ -108,7 +108,7 @@ def test_search_by_author(driver):
     assert page.search_author.get_text() == search_query
 
 
-# test6 Проверка поиска по книге
+# test6 Проверка поиска по названию книги
 @pytest.mark.positive
 def test_search_by_book(driver):
     search_query = "Капитанская дочка"
@@ -119,14 +119,14 @@ def test_search_by_book(driver):
     page.sear_button.wait_to_be_clickable()
     page.sear_button.click()
 
-    page.book.wait_to_be_clickable()
+    page.book_name.wait_to_be_clickable()
 
-    assert search_query in page.book.get_text()
+    assert search_query in page.book_name.get_text()
 
 
 # test7 Проверка поиска по невалидному запросу
 @pytest.mark.negative
-def test_search_by_book(driver):
+def test_invalid_search(driver):
     search_query = "йййййййййййй"
     page = MainPage(driver)
     page.sear_field.wait_to_be_clickable()
@@ -139,21 +139,28 @@ def test_search_by_book(driver):
 
     assert page.not_found_issue.get_text() == 'Мы ничего не нашли по вашему запросу! Что делать?'
 
-
+"""
 # test8 Добавление в отложенное
+@pytest.mark.positive
+def test_add_to_favorite(driver):
     search_query = "Капитанская дочка"
     page = MainPage(driver)
-    page.sear_field.wait_to_be_clickable()
-    page.sear_field.send_keys(search_query)
+    print('\n сообщение до вызова функции')
+    #page.sear_field.wait_to_be_clickable()
+    #page.sear_field.send_keys(search_query)
 
-    page.sear_button.wait_to_be_clickable()
-    page.sear_button.click()
+    #page.sear_button.wait_to_be_clickable()
+    #page.sear_button.click()
 
+    book_name, book_author, add_to_favorite = page.get_first_book_by_name(search_query)
+    add_to_favorite.click()
+
+    print('\n сообщение до вызова функции')
     #assert
-
+"""
 # test9 Удаление из отложенного
 # test10 Добавление в корзину
 # test11 Удаление из корзины
-# test12
-# test13
+# test12 Добавить в сравнение
+# test13 Удалить из сравнения
 # test14
