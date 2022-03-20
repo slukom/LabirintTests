@@ -27,6 +27,10 @@ class MainPage(WebPage):
     user_name = WebElement(WebPage, css_selector='span.js-b-autofade-text')  # имя пользователя в шапке страницы
     sear_field = WebElement(WebPage, id='search-field')  # поле поиска
     sear_button = WebElement(WebPage, css_selector='button.b-header-b-search-e-btn')  # кнопка Искать
+    favorite = WebElement(WebPage, link_text = 'Отложено') # кнопка Отложено
+    favorites_counter = WebElement(WebPage, css_selector = 'div.top-header span.b-header-b-personal-e-icon-count-m-putorder.basket-in-dreambox-a') # количесвто отложенных товаров
+    cart = WebElement(WebPage, css_selector='.top-header a[href="/cart/"]') # кнопка Корзина
+    cart_counter = WebElement(WebPage, css_selector = 'div.top-header span.b-header-b-personal-e-icon-count-m-cart.basket-in-cart-a') # количесвто товаров в корзине
 
     # модальная страница для авторизации
     find_login = WebElement(WebPage, css_selector='.full-input__input.formvalidate-error')  # поле для ввода логина (тел, емэйл, код скидки)
@@ -41,7 +45,6 @@ class MainPage(WebPage):
     yandex_password_input = WebElement(WebPage, id='passp-field-passwd') # поле для ввода пароля
     yandex_next_button1 = WebElement(WebPage, id='passp:sign-in') # кнопка "Войти"
 
-
     # страница с результатами поиска (по умолчанию вкладка "Товары")
     authors_link = WebElement(WebPage, css_selector='a[data-id_tab="1"]') # вкладка "Авторы"
     search_result = WebElement(WebPage, css_selector='a.rubric-list-item') # первый автор в списке результатов
@@ -53,11 +56,25 @@ class MainPage(WebPage):
     book_name = WebElement(WebPage, css_selector='span.product-title') # имя первого найденного товара (название книги)
     book_author = WebElement(WebPage, css_selector='div.product-author > a > span') # имя автора первого найденного товара (автор книги)
     add_to_favorite = WebElement(WebPage, css_selector='.icon-fave.track-tooltip.js-open-deferred-block')  # кнопка "Отложить" у первого товара
+    delete_from_favorite = WebElement(WebPage, css_selector = 'div.js-putorder-block-change.b-dropdown-window span.b-list-item-hover.pointer')
+    add_to_cart = WebElement(WebPage, css_selector = 'div.product-buy.buy-avaliable.fleft a.btn.buy-link.btn-primary') # кнопка "В корзину" у первого товара
 
     # страница с ненайденным результатом поиска
     not_found_issue = WebElement(WebPage, css_selector = 'div.search-error h1') # строка с сообщениемм 'Мы ничего не нашли по вашему запросу! Что делать?'
 
-"""
+    # страница "Отложенные товары"
+    clear_favorite = WebElement(WebPage, link_text = 'Очистить') # кнопка "Очистить"
+    message = WebElement(WebPage, css_selector = 'div#messages-text p.g-alttext-small') # сообщение "Выбранные товары удалены"
+    no_favorite_goods = WebElement(WebPage, id = 'cabinet')
+
+    # модальное окно при добавлении книги в Отложено
+    add_to_favorite_popup = WebElement(WebPage, css_selector = 'div.b-basket-popinfo-e-text.b-basket-popinfo-e-text-m-add.b-basket-popinfo-e-text-m-gray')
+
+    add_to_cart_popup = WebElement(WebPage, css_selector = 'div.b-basket-popinfo-e-text.b-basket-popinfo-e-text-m-add.b-basket-popinfo-e-text-m-gray')
+
+    # страница Корзина
+    empty_cart = WebElement(WebPage, css_selector = 'form#basket-step1-default span.g-alttext-small.g-alttext-grey.g-alttext-head') # сообщение "Ваша корзина пуста"
+
     def get_first_book_by_name(self, book_name): #
         self.sear_field.wait_to_be_clickable()
         self.sear_field.send_keys(book_name)
@@ -69,8 +86,8 @@ class MainPage(WebPage):
         first_book_name = self.book_name
         first_book_author = self.book_author
 
-        return first_book_name, first_book_author, self.add_to_favorite
-
-"""
+        return first_book_name, first_book_author, self.add_to_favorite, self.add_to_cart
 
 
+
+    # модальное окно при добавлении книги в Корзину

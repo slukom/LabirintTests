@@ -111,6 +111,7 @@ class WebElement(object):
     def send_keys(self, keys, wait=2):
         """ Send keys to the element. """
 
+        self.wait_to_be_clickable()
         keys = keys.replace('\n', '\ue007')
 
         element = self.find()

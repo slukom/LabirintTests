@@ -3,28 +3,19 @@
 # проекта.
 
 import pytest
-import uuid
-import pytest
 import requests
 from selenium import webdriver
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from settings import valid_email, valid_password, project_url
 
-"""
-@pytest.fixture
-def chrome_options(chrome_options):
-    # chrome_options.binary_location = '/usr/bin/google-chrome-stable'
-    # chrome_options.add_argument('--headless')
-    chrome_options.add_argument('--no-sandbox')
-    chrome_options.add_argument('--log-level=DEBUG')
-
-    return chrome_options
-"""
 
 @pytest.fixture(scope='function')
 def driver():
-    driver = webdriver.Chrome('../drivers/chromedriver')
+    capabilities = DesiredCapabilities().CHROME
+    capabilities["pageLoadStrategy"] = "none"
+
+    driver = webdriver.Chrome('../drivers/chromedriver', desired_capabilities=capabilities)
     driver.maximize_window()
-    #driver.implicitly_wait(5)
 
     yield driver
 
@@ -32,10 +23,9 @@ def driver():
     driver.quit()
 
 
-
 @pytest.fixture(scope='function')
 def driver_with_cookies(driver):
-    response = requests.post(url = f"{project_url}/login", data = {"email": valid_email, "pass": valid_password})
+    response = requests.post(url=f"{project_url}/login", data={"email": valid_email, "pass": valid_password})
     assert response.status_code == 200
     assert 'Cookie' in response.request.headers, 'В запросе не передан ключ авторизации'
     print('\n getting auth_key')
@@ -43,6 +33,7 @@ def driver_with_cookies(driver):
     cookie_list = response.request.headers.get('Cookie').split('=')
     driver.add_cookies({'name': cookie_list[0], 'value': cookie_list[1]})
     yield driver
+
 
 """
 @pytest.hookimpl(hookwrapper=True, tryfirst=True)

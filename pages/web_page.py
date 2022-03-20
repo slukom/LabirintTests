@@ -10,7 +10,6 @@ from selenium.webdriver.support import expected_conditions as EC
 
 
 class WebPage(object):
-
     _web_driver = None
 
     def __init__(self, web_driver, url=''):
@@ -34,15 +33,12 @@ class WebPage(object):
 
     def get(self, url):
         self._web_driver.get(url)
-        self.wait_page_loaded()
 
     def go_back(self):
         self._web_driver.back()
-        self.wait_page_loaded()
 
     def refresh(self):
         self._web_driver.refresh()
-        self.wait_page_loaded()
 
     def screenshot(self, file_name='screenshot.png'):
         self._web_driver.save_screenshot(file_name)
