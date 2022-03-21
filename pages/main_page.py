@@ -16,13 +16,8 @@ class MainPage(WebPage):
             url = os.getenv("MAIN_URL") or project_url
         super().__init__(driver, url)
 
-
-    def get_logo(self):
-        logo = WebElement(WebPage, css_selector='a.b-header-b-logo-e-logo-wrap')
-        logo.wait_to_be_clickable()
-        return logo
-
     # шапка страницы
+    logo = WebElement(WebPage, css_selector='a.b-header-b-logo-e-logo-wrap') # логотип со ссылкой на главную страницу
     main_cabinet = WebElement(WebPage, css_selector='.top-link-main_cabinet') # кнопка "Мой Лаб"
     user_name = WebElement(WebPage, css_selector='span.js-b-autofade-text')  # имя пользователя в шапке страницы
     sear_field = WebElement(WebPage, id='search-field')  # поле поиска
@@ -70,10 +65,14 @@ class MainPage(WebPage):
     # модальное окно при добавлении книги в Отложено
     add_to_favorite_popup = WebElement(WebPage, css_selector = 'div.b-basket-popinfo-e-text.b-basket-popinfo-e-text-m-add.b-basket-popinfo-e-text-m-gray')
 
+    # модальное окно при добавлении книги в Корзину
     add_to_cart_popup = WebElement(WebPage, css_selector = 'div.b-basket-popinfo-e-text.b-basket-popinfo-e-text-m-add.b-basket-popinfo-e-text-m-gray')
 
     # страница Корзина
     empty_cart = WebElement(WebPage, css_selector = 'form#basket-step1-default span.g-alttext-small.g-alttext-grey.g-alttext-head') # сообщение "Ваша корзина пуста"
+
+     # страница просмотра книги
+    isbn = WebElement(WebPage, css_selector = 'div.isbn') # номер isbn книги
 
     def get_first_book_by_name(self, book_name): #
         self.sear_field.wait_to_be_clickable()

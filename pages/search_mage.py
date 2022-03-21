@@ -11,13 +11,7 @@ from settings import project_url
 
 
 class SearchPage(WebPage):
-    def __init__(self, driver, url=''):
+    def __init__(self, driver, url='', search_query = ''):
         if not url:
-            url = os.getenv("MAIN_URL") or project_url
+            url = os.getenv("SEARCH_URL") or project_url + 'search/' + search_query + '/?stype=0'
         super().__init__(driver, url)
-
-
-    def get_logo(self):
-        logo = WebElement(WebPage, css_selector='a.b-header-b-logo-e-logo-wrap')
-        logo.wait_to_be_clickable()
-        return logo
