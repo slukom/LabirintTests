@@ -9,9 +9,8 @@ from pages.web_element import WebElement
 from pages.web_element import ManyWebElements
 from settings import project_url
 
-
-class SearchPage(WebPage):
-    def __init__(self, driver, url='', search_query = ''):
-        if not url:
-            url = os.getenv("SEARCH_URL") or project_url + 'search/' + search_query + '/?stype=0'
+# страница просмотра книги
+class AboutBookPage(WebPage):
+    def __init__(self, driver, url):
         super().__init__(driver, url)
+

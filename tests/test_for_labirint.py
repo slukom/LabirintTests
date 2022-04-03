@@ -4,12 +4,17 @@ import pytest
 from selenium.webdriver.common.alert import Alert
 
 from pages.main_page import MainPage
+from pages.about_book_page import AboutBookPage
+from pages.about_author_page import AboutAuthorPage
+from pages.search_result_page import SearchResultPage
+from pages.favorites_page import FavoritesPage
+from pages.cart_page import CartPage
 from settings import valid_email, valid_password
 from selenium.webdriver.common.alert import Alert
-from settings import project_url, discount_code
+from settings import project_url, discount_code, login
 
 
-# test1 Проверка авторизация на сайте с помощью учетки Яндекс
+# test1 Проверка авторизация на сайте с помощью учетки Яндекс (!)
 @pytest.mark.positive
 def test_login_with_yandex(driver):
     page = MainPage(driver)
@@ -24,7 +29,7 @@ def test_login_with_yandex(driver):
 
     page.user_name.wait_to_be_clickable()
 
-    assert page.user_name.get_text() == 'Test'
+    assert page.user_name.get_text() == login
 
 
 # test2 Авторизация по корректному коду скидки
@@ -36,10 +41,15 @@ def test_login_with_yandex(driver):
 
     page.find_login.send_keys(discount_code)
     page.input_button.click()
-    # добавить проверку на текст в модальном окне (!!!)
+
+    page.success_login.wait_to_be_clickable()
+    # проверяем, что на модальной форме об успешной авторизации есть приветсвенный текст
+    assert f'Здравствуйте, {login}' in page.success_login.get_text()
+
     page.user_name.wait_to_be_clickable()
-    time.sleep(6)
-    assert page.user_name.get_text() == 'Test'
+    time.sleep(6) # таймер ожидания закрытия модальной формы, после которой появляется имя пользователя в шапке сайта
+    # проверяем, что в шапке сайта появилось имя авторизаванного пользователя
+    assert page.user_name.get_text() == login
 
 
 # test3 Проверка ошибки валидации логина при вводе некорректного символа
@@ -95,10 +105,15 @@ def test_search_by_author(driver):
     page.sear_field.send_keys(search_query)
 
     page.sear_button.click()
-    page.authors_link.click()
-    page.search_result.click()
-    page.search_author.wait_to_be_clickable()
-    assert page.search_author.get_text() == search_query
+    page.wait_page_loaded()
+    search_result_page = SearchResultPage(driver, page.get_current_url())
+    search_result_page.wait_page_loaded()
+    search_result_page.authors_link.click()
+
+    search_result_page.found_author.click()
+    about_author_page = AboutAuthorPage(driver, page.get_current_url())
+    about_author_page.author_name.wait_to_be_clickable()
+    assert about_author_page.author_name.get_text() == search_query
 
 
 # test7 переход на главную страницу со страницы просмотра информации об авторе
@@ -108,8 +123,11 @@ def test_go_to_main_page_from_author_page(driver):
     page = MainPage(driver)
     page.sear_field.send_keys(search_query)
     page.sear_button.click()
-    page.authors_link.click()
-    page.search_result.click()
+    page.wait_page_loaded()
+    search_result_page = SearchResultPage(driver, page.get_current_url())
+    search_result_page.authors_link.wait_to_be_clickable()
+    search_result_page.authors_link.click()
+    search_result_page.search_result.click()
 
     page.logo.wait_to_be_clickable()
     page.logo.click()
@@ -139,20 +157,19 @@ def test_go_to_main_page_from_search_page(driver):
     assert page.get_current_url() == project_url
 
 
-# test10 Поиск по ISBN
+# test10 Поиск книги по ISBN
 @pytest.mark.positive
 def test_search_by_ISBN(driver):
     search_query = "978-5-9287-3324-7"
-    #search_query = "Капитанская дочка"
     page = MainPage(driver)
     book_name, _, _, _ = page.get_first_book_by_name(search_query)
     assert "Капитанская дочка" in book_name.get_text()
 
     book_name.click()
-    page.isbn.wait_to_be_clickable()
-    isbn = page.isbn.get_text()
-
-    assert search_query in isbn
+    page.wait_page_loaded()
+    about_book = AboutBookPage(driver, page.get_current_url())
+    about_book.isbn.wait_to_be_clickable()
+    assert search_query in about_book.isbn.get_text()
 
 
 # test11 Проверка поиска по невалидному запросу
@@ -163,9 +180,10 @@ def test_invalid_search(driver):
 
     page.sear_field.send_keys(search_query)
     page.sear_button.click()
-
-    page.not_found_issue.wait_to_be_clickable()
-    assert page.not_found_issue.get_text() == 'Мы ничего не нашли по вашему запросу! Что делать?'
+    page.wait_page_loaded()
+    search_result_page = SearchResultPage(driver, page.get_current_url())
+    search_result_page.not_found_issue.wait_to_be_clickable()
+    assert search_result_page.not_found_issue.get_text() == 'Мы ничего не нашли по вашему запросу! Что делать?'
 
 
 # test12 Заходим на страницу Отложенные и проверяем, что отложенных товаров нет
@@ -173,11 +191,23 @@ def test_invalid_search(driver):
 def test_no_favorite(driver):
     page = MainPage(driver)
     page.favorite.click()
-    page.no_favorite_goods.wait_to_be_clickable()
-    assert 'Отложите интересные вам товары' in page.no_favorite_goods.get_text()
+    page.wait_page_loaded()
+    favorites_page = FavoritesPage(driver)
+    favorites_page.no_favorite_goods.wait_to_be_clickable()
+    assert 'Отложите интересные вам товары' in favorites_page.no_favorite_goods.get_text()
 
 
 # test13 переход на главную страницу со страницы "Отложенные товары"
+@pytest.mark.positive
+def test_go_to_main_page_from_favorite(driver):
+    search_query = "Капитанская дочка"
+    page = MainPage(driver)
+    page.favorite.click()
+
+    page.logo.wait_to_be_clickable()
+    page.logo.click()
+
+    assert page.get_current_url() == project_url
 
 
 # test14 Добавление в отложенное со страницы поиска
@@ -204,13 +234,17 @@ def test_delete_from_favorite(driver):
     page = MainPage(driver)
 
     _, _, add_to_favorite, _ = page.get_first_book_by_name(search_query) # находим кнопку-сердечко
-    add_to_favorite.click() # нажимаем на кнопку-сердечко, чтобы добавить в избранное
-    add_to_favorite.click() # нажимаем повторно для вызова контекстного меню
-    page.delete_from_favorite.wait_to_be_clickable()
-    page.delete_from_favorite.click() # нажимаем на вторую кнопку в меню
+    page.wait_page_loaded()
+    search_result_page = SearchResultPage(driver, page.get_current_url())
+    add_to_favorite.wait_to_be_clickable()
+    add_to_favorite.click()  # нажимаем на кнопку-сердечко, чтобы добавить в избранное
+    add_to_favorite.click()  # нажимаем повторно для вызова контекстного меню
+    search_result_page.delete_from_favorite.wait_to_be_clickable()
+    search_result_page.delete_from_favorite.click() # нажимаем на вторую кнопку в меню
 
     page.favorites_counter.wait_to_be_clickable()
     favorites_counter = int(page.favorites_counter.get_text())
+
     assert favorites_counter == 0
 
 
@@ -223,13 +257,16 @@ def test_clear_favorite(driver):
     _, _, add_to_favorite, _ = page.get_first_book_by_name(search_query)  # находим кнопку-сердечко
     add_to_favorite.click()  # нажимаем на кнопку-сердечко, чтобы добавить в избранное
     page.favorites_counter.click()
-    page.clear_favorite.click()
+    page.wait_page_loaded()
+    favorite_page = FavoritesPage(driver, page.get_current_url())
+    favorite_page.clear_favorite.wait_to_be_clickable()
+    favorite_page.clear_favorite.click()
     alert = Alert(driver) # создаем объект оповещения
     alert.accept() # нажимаем на кнпоку "Ок" на окне оповещения
 
     # проверяем, что после очистки отложенных товаров отображается сообщение 'Выбранные товары удалены!'
-    page.message.wait_to_be_clickable()
-    assert page.message.get_text() == 'Выбранные товары удалены!'
+    favorite_page.message.wait_to_be_clickable()
+    assert favorite_page.message.get_text() == 'Выбранные товары удалены!'
 
 
 # test17 Заходим в Корзину и проверяем, что нет товаров в корзине
@@ -238,15 +275,26 @@ def test_empty_cart(driver):
     page = MainPage(driver)
     page.cart.wait_to_be_clickable()
     page.cart.click()
-    page.empty_cart.wait_to_be_clickable()
+    page.wait_page_loaded()
+    cart_page = CartPage(driver, page.get_current_url())
+    cart_page.empty_cart.wait_to_be_clickable()
 
-    assert 'ВАША КОРЗИНА ПУСТА. ПОЧЕМУ?' in page.empty_cart.get_text()
+    assert 'ВАША КОРЗИНА ПУСТА. ПОЧЕМУ?' in cart_page.empty_cart.get_text()
 
 
 # test18 переход на главную страницу со страницы "Корзина"
+@pytest.mark.positive
+def test_go_to_main_page_from_cart(driver):
+    search_query = "Капитанская дочка"
+    page = MainPage(driver)
+    page.cart.click()
+    page.logo.wait_to_be_clickable()
+    page.logo.click()
+
+    assert page.get_current_url() == project_url
 
 
-# test19 Добавление в корзину
+# test19 Добавление в корзину первую найденную книгу
 @pytest.mark.positive
 def test_add_to_cart(driver):
     search_query = "Капитанская дочка"
@@ -254,18 +302,45 @@ def test_add_to_cart(driver):
 
     _, _, _, add_to_cart = page.get_first_book_by_name(search_query)
     add_to_cart.click()
+    page.add_to_cart_popup.wait_to_be_clickable()
+    # проверяем, что появилось сообщение об успешном добавлении в корзину
+    assert 'Вы добавили в корзину книгу' in page.add_to_cart_popup.get_text()
 
     page.cart_counter.wait_to_be_clickable()
+    # time.sleep(2)
     cart_counter = int(page.cart_counter.get_text())
-
+    # проверяем, что счетчик товаров в корзине увеличился
     assert cart_counter > 0
 
+
+# test20 Добавление в корзину со страницы просмотра книги (!!!)
+@pytest.mark.positive
+def test_add_to_cart_from_book_page(driver):
+    search_query = "Капитанская дочка"
+    page = MainPage(driver)
+    page.accept_cookie.click()
+    name_found_book, _, _, add_to_cart = page.get_first_book_by_name(search_query)
+    name_found_book.click()
+    page.wait_page_loaded()
+    about_book_page = AboutBookPage(driver, page.get_current_url())
+    about_book_page.add_to_cart.wait_to_be_clickable()
+    about_book_page.add_to_cart.click()
+    # проверяем, что название кнопки изменилось
+    assert about_book_page.add_to_cart.get_text() == 'Оформить заказ'
+
+    page.cart_counter.wait_to_be_clickable()
+    time.sleep(5)
+    cart_counter = int(page.cart_counter.get_text())
+    # проверяем, что счетчик увеличился
+    assert cart_counter > 0
+    time.sleep(3)
     page.add_to_cart_popup.wait_to_be_clickable()
     assert 'Вы добавили в корзину книгу' in page.add_to_cart_popup.get_text()
 
-# test20 Оформление покупки
+# test21 Оформление покупки
 
-# test19 Удаление из корзины
+# test22 Удаление из корзины
+
 # test20 Добавить в сравнение
 # test21 Удалить из сравнения
 # test22 Получить купон по валидному email
