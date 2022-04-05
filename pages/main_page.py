@@ -55,6 +55,10 @@ class MainPage(WebPage):
     # модальное окно с кнопкой "Принять"
     accept_cookie = WebElement(WebPage, css_selector = 'button.cookie-policy__button.js-cookie-policy-agree')
 
+    # элементы на главной странице
+    open_actions_block = WebElement(WebPage, css_selector = 'a.icon-compare.track-tooltip.js-open-actions-block') # троеточие под первой книги
+    add_to_compare = WebElement(WebPage, css_selector = 'a.b-list-item-hover.js-card-block-actions-compare') # кнпока добавить в избранное
+
     def get_first_book_by_name(self, book_name): # первая найденная книга по названию
         self.sear_field.wait_to_be_clickable()
         self.sear_field.send_keys(book_name)

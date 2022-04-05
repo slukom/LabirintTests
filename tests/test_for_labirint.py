@@ -9,6 +9,7 @@ from pages.about_author_page import AboutAuthorPage
 from pages.search_result_page import SearchResultPage
 from pages.favorites_page import FavoritesPage
 from pages.cart_page import CartPage
+from pages.compare_page import ComparetPage
 from settings import valid_email, valid_password
 from selenium.webdriver.common.alert import Alert
 from settings import project_url, discount_code, login
@@ -20,7 +21,6 @@ def test_login_with_yandex(driver):
     page = MainPage(driver)
     page.main_cabinet.click()
     page.login_option.click()
-
     page.yandex_login_button.click()
     page.yandex_login_input.send_keys(valid_email)
     page.yandex_next_button0.click()
@@ -34,7 +34,7 @@ def test_login_with_yandex(driver):
 
 # test2 Авторизация по корректному коду скидки
 @pytest.mark.positive
-def test_login_with_yandex(driver):
+def test_login_with_code(driver):
     page = MainPage(driver)
     page.main_cabinet.click()
     page.login_option.click()
@@ -42,12 +42,13 @@ def test_login_with_yandex(driver):
     page.find_login.send_keys(discount_code)
     page.input_button.click()
 
-    page.success_login.wait_to_be_clickable()
-    # проверяем, что на модальной форме об успешной авторизации есть приветсвенный текст
-    assert f'Здравствуйте, {login}' in page.success_login.get_text()
-
+    #page.success_login.wait_to_be_clickable()
+    #print('\nlogin = ',page.success_login.get_text())
+    # проверяем, что на модальной форме об успешной авторизации есть приветственный текст
+    #assert f'Здравствуйте, {login}' in page.success_login.get_text()
+    page.wait_page_loaded()
     page.user_name.wait_to_be_clickable()
-    time.sleep(6) # таймер ожидания закрытия модальной формы, после которой появляется имя пользователя в шапке сайта
+    #time.sleep(6) # таймер ожидания закрытия модальной формы, после которой появляется имя пользователя в шапке сайта
     # проверяем, что в шапке сайта появилось имя авторизаванного пользователя
     assert page.user_name.get_text() == login
 
@@ -313,7 +314,7 @@ def test_add_to_cart(driver):
     assert cart_counter > 0
 
 
-# test20 Добавление в корзину со страницы просмотра книги (!!!)
+# test20 Добавление в корзину со страницы просмотра книги
 @pytest.mark.positive
 def test_add_to_cart_from_book_page(driver):
     search_query = "Капитанская дочка"
@@ -329,7 +330,7 @@ def test_add_to_cart_from_book_page(driver):
     assert about_book_page.add_to_cart.get_text() == 'Оформить заказ'
 
     page.cart_counter.wait_to_be_clickable()
-    time.sleep(5)
+    time.sleep(3)
     cart_counter = int(page.cart_counter.get_text())
     # проверяем, что счетчик увеличился
     assert cart_counter > 0
@@ -337,18 +338,43 @@ def test_add_to_cart_from_book_page(driver):
     page.add_to_cart_popup.wait_to_be_clickable()
     assert 'Вы добавили в корзину книгу' in page.add_to_cart_popup.get_text()
 
-# test21 Оформление покупки
 
-# test22 Удаление из корзины
+# test21 Добавить в сравнение
+def test_add_to_compare(driver):
+    page = MainPage(driver)
+    page.accept_cookie.click()
+    page.open_actions_block.click()
+    page.add_to_compare.wait_to_be_clickable()
+    page.add_to_compare.click()
+    page.wait_page_loaded()
+    # проверяем, название пункта меню меняется на текст 'Перейти к сравнению'
+    assert 'Перейти к сравнению' in page.add_to_compare.get_text()
 
-# test20 Добавить в сравнение
-# test21 Удалить из сравнения
-# test22 Получить купон по валидному email
-# test23 Получить купон по невалидному email
-# test24 Задать вопрос в поддержку
-# test25 Отправить пустое сообщение в поддержку
-# test26 Отправить очень длинное сообщение в поддержку
-# test27 Успешный поиск по слову в своих сообщениях с поддержкой
+
+# test22 Удалить из сравнения
+def test_delete_from_compare(driver):
+    page = MainPage(driver)
+    page.accept_cookie.click()
+    page.open_actions_block.click()
+    page.add_to_compare.wait_to_be_clickable()
+    page.add_to_compare.click()
+    page.wait_page_loaded()
+    page.add_to_compare.click()
+    page.wait_page_loaded()
+    compare_page = ComparetPage(driver, page.get_current_url())
+    compare_page.wait_page_loaded()
+    compare_page.delete_compare_list_button.click()
+    alert = Alert(driver)
+    alert.accept()
+    # проверяем, что после очищения сравнительного списка появляется текст 'Товаров нет. Добавьте хотя бы один товар, например, из раздела'
+    assert 'Товаров нет. Добавьте хотя бы один товар, например, из раздела' in compare_page.empty_compare_text.get_text()
+
+# test23 Получить купон по валидному email
+# test24 Получить купон по невалидному email
+# test25 Задать вопрос в поддержку
+# test26 Отправить пустое сообщение в поддержку
+# test27 Отправить очень длинное сообщение в поддержку
+# test26 Успешный поиск по слову в своих сообщениях с поддержкой
 # test28 Безрезультатный поиск по слову в своих сообщениях с поддержкой
 # test29 Успешный поиск по слову в публичных сообщениях с поддержкой
 # test30 Безрезультатный поиск по слову в публичных сообщениях с поддержкой
@@ -358,7 +384,9 @@ def test_add_to_cart_from_book_page(driver):
 # test34 Переход на главную страницу со страницы Помощи
 # test35 Успешный поиск по слову на странице Помощи
 # test36 Безрезультатный поиск по слову на странице Помощи
+# test21 Оформление покупки
 
+# test22 Удаление из корзины
 
 
 
