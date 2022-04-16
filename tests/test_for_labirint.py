@@ -10,9 +10,11 @@ from pages.search_result_page import SearchResultPage
 from pages.favorites_page import FavoritesPage
 from pages.cart_page import CartPage
 from pages.compare_page import ComparetPage
-from settings import valid_email, valid_password
+from pages.support_page import SupportPage
+from settings import valid_email, valid_password, long_text
 from selenium.webdriver.common.alert import Alert
 from settings import project_url, discount_code, login
+
 
 
 # test1 Проверка авторизация на сайте с помощью учетки Яндекс (!)
@@ -369,22 +371,142 @@ def test_delete_from_compare(driver):
     # проверяем, что после очищения сравнительного списка появляется текст 'Товаров нет. Добавьте хотя бы один товар, например, из раздела'
     assert 'Товаров нет. Добавьте хотя бы один товар, например, из раздела' in compare_page.empty_compare_text.get_text()
 
-# test23 Получить купон по валидному email
-# test24 Получить купон по невалидному email
-# test25 Задать вопрос в поддержку
-# test26 Отправить пустое сообщение в поддержку
-# test27 Отправить очень длинное сообщение в поддержку
-# test26 Успешный поиск по слову в своих сообщениях с поддержкой
-# test28 Безрезультатный поиск по слову в своих сообщениях с поддержкой
-# test29 Успешный поиск по слову в публичных сообщениях с поддержкой
-# test30 Безрезультатный поиск по слову в публичных сообщениях с поддержкой
-# test31 Переход на главную страницу со страницы поддержки
-# test32 Переход в соц.сети
-# test33 Переход на страницу Помощи
-# test34 Переход на главную страницу со страницы Помощи
-# test35 Успешный поиск по слову на странице Помощи
-# test36 Безрезультатный поиск по слову на странице Помощи
-# test21 Оформление покупки
+
+# test23 переход на главную страницу со страницы "Сравнение товаров"
+@pytest.mark.positive
+def test_go_to_main_page_from_compare(driver):
+    page = MainPage(driver)
+    page.accept_cookie.click()
+    page.open_actions_block.click()
+    page.add_to_compare.wait_to_be_clickable()
+    page.add_to_compare.click()
+    page.wait_page_loaded()
+    page.add_to_compare.click()
+    assert page.get_current_url() == project_url
+
+
+# test24 Получить купон по валидному зарегистрированному ранее email
+@pytest.mark.positive
+def test_get_coupon_by_used_valid_email(driver):
+    page = MainPage(driver)
+    page.input_email.send_keys(valid_email)
+    page.get_coupon_button.wait_to_be_clickable()
+    page.get_coupon_button.click()
+    # проверяем, что выводится сообщение 'Адрес электронной почты уже используется'
+    assert 'Адрес электронной почты уже используется' in page.get_email_is_in_use_text()
+
+
+# test25 Получить купон по невалидному email
+@pytest.mark.negative
+def test_get_coupon_by_invalid_email(driver):
+    page = MainPage(driver)
+    page.input_email.send_keys('q@q.q')
+    page.get_coupon_button.wait_to_be_clickable()
+    page.get_coupon_button.click()
+    # проверяем, что выводится сообщение 'Укажите почту'
+    assert 'Укажите почту' in page.get_email_is_in_use_text()
+
+
+# test26 Получить купон по незарегистрированному валидному email (!!!)
+@pytest.mark.positive
+def test_get_coupon_by_new_valid_email(driver):
+    page = MainPage(driver)
+    page.input_email.send_keys(f'test{time.time()}@test.test')
+    page.get_coupon_button.wait_to_be_clickable()
+    page.get_coupon_button.click()
+    page.received_coupon_popup.wait_to_be_clickable()
+    # проверяем, что выводится сообщение о получении купона
+    assert 'Купон на 50 р.' in page.received_coupon_popup.get_text()
+
+
+# test27 Задать вопрос в поддержку
+@pytest.mark.positive
+def test_ask_support(driver):
+    message_for_support = 'test message'
+    page = MainPage(driver)
+    page.support_link.click()
+    page.wait_page_loaded()
+    support_page = SupportPage(driver, page.get_current_url())
+    support_page.ask_support_button.wait_to_be_clickable()
+    support_page.ask_support_button.click()
+    support_page.find_login.wait_to_be_clickable()
+    support_page.find_login.send_keys(discount_code)
+    support_page.input_button.click()
+
+    support_page.textarea_for_question.send_keys(message_for_support)
+    support_page.send_question_button.click()
+    support_page.wait_page_loaded()
+    assert message_for_support in support_page.posted_question.get_text()
+
+
+# test28 Отправить пусто сообщение в поддержку
+@pytest.mark.negative
+def test_send_empty_message_to_support(driver):
+    message_for_support = ''
+
+    support_page = SupportPage(driver)
+    support_page.ask_support_button.wait_to_be_clickable()
+    support_page.ask_support_button.click()
+    support_page.find_login.wait_to_be_clickable()
+    support_page.find_login.send_keys(discount_code)
+    support_page.input_button.click()
+    support_page.textarea_for_question.send_keys(message_for_support)
+
+    support_page.send_question_button.click()
+    support_page.send_question_button.click()
+
+    support_page.wait_page_loaded()
+    assert 'Переписки отсутствуют :(' == support_page.no_correspondence_text.get_text()
+
+
+# test29 Успешный поиск по слову в своих сообщениях с поддержкой
+@pytest.mark.positive
+def test_success_search_in_my_messages(driver):
+    message_for_support = 'test message'
+    search_request = 'test'
+    support_page = SupportPage(driver)
+    support_page.ask_support_button.wait_to_be_clickable()
+    support_page.ask_support_button.click()
+    support_page.find_login.wait_to_be_clickable()
+    support_page.find_login.send_keys(discount_code)
+    support_page.input_button.click()
+
+    support_page.textarea_for_question.send_keys(message_for_support)
+    support_page.send_question_button.click()
+    support_page.wait_page_loaded()
+    support_page.my_question_link.click()
+
+    support_page.search_here_input.send_keys(search_request)
+    support_page.submit_request_button.click()
+    support_page.wait_page_loaded()
+    # проверяем что в найденных сообщениях содержится искомое слово
+    assert search_request in support_page.found_message.get_text()
+
+
+# test30 Безрезультатный поиск по слову в своих сообщениях с поддержкой
+@pytest.mark.negative
+def test_unsuccessful_search_in_my_messages(driver):
+    search_request = 'zzz'
+    support_page = SupportPage(driver)
+    support_page.my_question_link.click()
+    support_page.find_login.wait_to_be_clickable()
+    support_page.find_login.send_keys(discount_code)
+    support_page.input_button.click()
+    support_page.wait_page_loaded()
+    support_page.search_here_input.send_keys(search_request)
+    support_page.submit_request_button.click()
+    support_page.wait_page_loaded()
+    assert 'Переписки отсутствуют :(' == support_page.no_correspondence_text.get_text()
+
+# test31 Успешный поиск по слову в публичных сообщениях с поддержкой
+# test32 Безрезультатный поиск по слову в публичных сообщениях с поддержкой
+# test33 Переход на главную страницу со страницы поддержки
+# test34 Переход в соц.сети
+# test35 Переход на страницу Помощи
+# test36 Переход на главную страницу со страницы Помощи
+# test37 Успешный поиск по слову на странице Помощи
+# test38 Безрезультатный поиск по слову на странице Помощи
+# test39 Оформление покупки
 
 # test22 Удаление из корзины
 

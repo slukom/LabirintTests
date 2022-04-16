@@ -28,6 +28,7 @@ class MainPage(WebPage):
     favorites_counter = WebElement(WebPage, css_selector = 'div.top-header span.b-header-b-personal-e-icon-count-m-putorder.basket-in-dreambox-a') # количесвто отложенных товаров
     cart = WebElement(WebPage, css_selector='.top-header a[href="/cart/"]') # кнопка Корзина
     cart_counter = WebElement(WebPage, css_selector = 'div.top-header span.b-header-b-personal-e-icon-count-m-cart.basket-in-cart-a') # количесвто товаров в корзине
+    support_link = WebElement(WebPage, css_selector = 'li.b-header-b-sec-menu-e-list-item.analytics-click-js', link_text='Поддержка')
 
     # модальная страница для авторизации
     find_login = WebElement(WebPage, css_selector='.full-input__input.formvalidate-error')  # поле для ввода логина (тел, емэйл, код скидки)
@@ -58,6 +59,17 @@ class MainPage(WebPage):
     # элементы на главной странице
     open_actions_block = WebElement(WebPage, css_selector = 'a.icon-compare.track-tooltip.js-open-actions-block') # троеточие под первой книги
     add_to_compare = WebElement(WebPage, css_selector = 'a.b-list-item-hover.js-card-block-actions-compare') # кнпока добавить в избранное
+
+    input_email = WebElement(WebPage, css_selector = 'input.getemail-form-input.js-getemail') # поле для ввода email, по которому можно получить купон
+    get_coupon_button = WebElement(WebPage, css_selector = 'div.getemail-main-left-btn-outer') # кнопка "Получить купон"
+    used_email_text = WebElement(WebPage, css_selector = 'label.getemail-form-label.getemail-form-e-text')
+
+    # модальное окно при получении купона
+    received_coupon_popup = WebElement(WebPage, css_selector = 'span.popup-nib-e-hint')
+
+    def get_email_is_in_use_text(self):
+        print(self.used_email_text.get_text())
+        return self.used_email_text.get_text()
 
     def get_first_book_by_name(self, book_name): # первая найденная книга по названию
         self.sear_field.wait_to_be_clickable()
