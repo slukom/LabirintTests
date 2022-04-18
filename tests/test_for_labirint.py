@@ -11,9 +11,10 @@ from pages.favorites_page import FavoritesPage
 from pages.cart_page import CartPage
 from pages.compare_page import ComparetPage
 from pages.support_page import SupportPage
-from settings import valid_email, valid_password, long_text
-from selenium.webdriver.common.alert import Alert
-from settings import project_url, discount_code, login
+from pages.checkout_page import CheckoutPage
+from settings import valid_email, valid_password
+from settings import project_url, discount_code, login, social_network
+from selenium.webdriver.common.action_chains import ActionChains
 
 
 
@@ -44,13 +45,8 @@ def test_login_with_code(driver):
     page.find_login.send_keys(discount_code)
     page.input_button.click()
 
-    #page.success_login.wait_to_be_clickable()
-    #print('\nlogin = ',page.success_login.get_text())
-    # проверяем, что на модальной форме об успешной авторизации есть приветственный текст
-    #assert f'Здравствуйте, {login}' in page.success_login.get_text()
     page.wait_page_loaded()
     page.user_name.wait_to_be_clickable()
-    #time.sleep(6) # таймер ожидания закрытия модальной формы, после которой появляется имя пользователя в шапке сайта
     # проверяем, что в шапке сайта появилось имя авторизаванного пользователя
     assert page.user_name.get_text() == login
 
@@ -105,9 +101,9 @@ def test_search_by_author(driver):
     search_query = "Александр Сергеевич Пушкин"
     page = MainPage(driver)
 
-    page.sear_field.send_keys(search_query)
+    page.search_field.send_keys(search_query)
 
-    page.sear_button.click()
+    page.search_button.click()
     page.wait_page_loaded()
     search_result_page = SearchResultPage(driver, page.get_current_url())
     search_result_page.wait_page_loaded()
@@ -124,8 +120,8 @@ def test_search_by_author(driver):
 def test_go_to_main_page_from_author_page(driver):
     search_query = "Александр Сергеевич Пушкин"
     page = MainPage(driver)
-    page.sear_field.send_keys(search_query)
-    page.sear_button.click()
+    page.search_field.send_keys(search_query)
+    page.search_button.click()
     page.wait_page_loaded()
     search_result_page = SearchResultPage(driver, page.get_current_url())
     search_result_page.authors_link.wait_to_be_clickable()
@@ -181,8 +177,8 @@ def test_invalid_search(driver):
     search_query = "йййййййййййй"
     page = MainPage(driver)
 
-    page.sear_field.send_keys(search_query)
-    page.sear_button.click()
+    page.search_field.send_keys(search_query)
+    page.search_button.click()
     page.wait_page_loaded()
     search_result_page = SearchResultPage(driver, page.get_current_url())
     search_result_page.not_found_issue.wait_to_be_clickable()
@@ -280,9 +276,9 @@ def test_empty_cart(driver):
     page.cart.click()
     page.wait_page_loaded()
     cart_page = CartPage(driver, page.get_current_url())
-    cart_page.empty_cart.wait_to_be_clickable()
+    cart_page.empty_cart_text.wait_to_be_clickable()
 
-    assert 'ВАША КОРЗИНА ПУСТА. ПОЧЕМУ?' in cart_page.empty_cart.get_text()
+    assert 'ВАША КОРЗИНА ПУСТА. ПОЧЕМУ?' in cart_page.empty_cart_text.get_text()
 
 
 # test18 переход на главную страницу со страницы "Корзина"
@@ -367,6 +363,7 @@ def test_delete_from_compare(driver):
     compare_page.wait_page_loaded()
     compare_page.delete_compare_list_button.click()
     alert = Alert(driver)
+    time.sleep(2)
     alert.accept()
     # проверяем, что после очищения сравнительного списка появляется текст 'Товаров нет. Добавьте хотя бы один товар, например, из раздела'
     assert 'Товаров нет. Добавьте хотя бы один товар, например, из раздела' in compare_page.empty_compare_text.get_text()
@@ -382,6 +379,9 @@ def test_go_to_main_page_from_compare(driver):
     page.add_to_compare.click()
     page.wait_page_loaded()
     page.add_to_compare.click()
+    page.wait_page_loaded()
+    page.logo.click()
+    # проверяем, что вернулись на главную страницу
     assert page.get_current_url() == project_url
 
 
@@ -407,7 +407,7 @@ def test_get_coupon_by_invalid_email(driver):
     assert 'Укажите почту' in page.get_email_is_in_use_text()
 
 
-# test26 Получить купон по незарегистрированному валидному email (!!!)
+# test26 Получить купон по незарегистрированному валидному email
 @pytest.mark.positive
 def test_get_coupon_by_new_valid_email(driver):
     page = MainPage(driver)
@@ -443,7 +443,6 @@ def test_ask_support(driver):
 @pytest.mark.negative
 def test_send_empty_message_to_support(driver):
     message_for_support = ''
-
     support_page = SupportPage(driver)
     support_page.ask_support_button.wait_to_be_clickable()
     support_page.ask_support_button.click()
@@ -456,6 +455,7 @@ def test_send_empty_message_to_support(driver):
     support_page.send_question_button.click()
 
     support_page.wait_page_loaded()
+    # проверяем что не удалось отправить сообщение
     assert 'Переписки отсутствуют :(' == support_page.no_correspondence_text.get_text()
 
 
@@ -496,19 +496,115 @@ def test_unsuccessful_search_in_my_messages(driver):
     support_page.search_here_input.send_keys(search_request)
     support_page.submit_request_button.click()
     support_page.wait_page_loaded()
+    # проверяем что по найденному запросу сообщения не найдены
     assert 'Переписки отсутствуют :(' == support_page.no_correspondence_text.get_text()
 
-# test31 Успешный поиск по слову в публичных сообщениях с поддержкой
-# test32 Безрезультатный поиск по слову в публичных сообщениях с поддержкой
-# test33 Переход на главную страницу со страницы поддержки
-# test34 Переход в соц.сети
-# test35 Переход на страницу Помощи
-# test36 Переход на главную страницу со страницы Помощи
-# test37 Успешный поиск по слову на странице Помощи
-# test38 Безрезультатный поиск по слову на странице Помощи
-# test39 Оформление покупки
 
-# test22 Удаление из корзины
+# test31 Успешный поиск по слову в публичных сообщениях с поддержкой
+@pytest.mark.positive
+def test_success_search_in_public_messages(driver):
+    search_request = 'доставк'
+    support_page = SupportPage(driver)
+    support_page.ask_support_button.wait_to_be_clickable()
+    support_page.search_here_input.send_keys(search_request)
+    support_page.submit_request_button.click()
+    support_page.wait_page_loaded()
+    # проверяем что в найденных сообщениях содержится искомое слово
+    assert search_request in support_page.found_message.get_text()
+
+
+# test32 Безрезультатный поиск по слову в публичных сообщениях с поддержкой
+@pytest.mark.negative
+def test_unsuccess_search_in_public_messages(driver):
+    search_request = 'zzz'
+    support_page = SupportPage(driver)
+    support_page.ask_support_button.wait_to_be_clickable()
+    support_page.search_here_input.send_keys(search_request)
+    support_page.submit_request_button.click()
+    support_page.wait_page_loaded()
+    # проверяем что по найденному запросу сообщения не найдены
+    assert 'Переписки отсутствуют :(' in support_page.found_message.get_text()
+
+
+# test33 Переход на главную страницу со страницы поддержки
+@pytest.mark.negative
+def test_unsuccess_search_in_public_messages(driver):
+    search_request = 'zzz'
+    support_page = SupportPage(driver)
+    support_page.ask_support_button.wait_to_be_clickable()
+    support_page.search_here_input.send_keys(search_request)
+    support_page.submit_request_button.click()
+    support_page.wait_page_loaded()
+    # проверяем что по найденному запросу сообщения не найдены
+    assert 'Переписки отсутствуют :(' in support_page.found_message.get_text()
+
+
+# test34 Оформление покупки
+@pytest.mark.positive
+def test_ordering(driver):
+    page = MainPage(driver)
+    page.accept_cookie.click()
+    page.add_to_cart.click()
+    page.wait_page_loaded()
+    page.cart.click()
+    cart_page = CartPage(driver, page.get_current_url())
+    cart_page.wait_page_loaded()
+    cart_page.go_to_checkout_button.click()
+    cart_page.wait_page_loaded()
+    checkout_page = CheckoutPage(driver, page.get_current_url())
+    checkout_page.wait_page_loaded()
+    assert 'Оформление заказа' in checkout_page.page_title.get_text()
+
+
+# test35 Очистить корзину
+@pytest.mark.positive
+def test_clear_cart(driver):
+    page = MainPage(driver)
+    page.accept_cookie.click()
+    page.add_to_cart.click()
+    page.wait_page_loaded()
+    page.cart.click()
+    cart_page = CartPage(driver, page.get_current_url())
+    cart_page.wait_page_loaded()
+    cart_page.empty_cart_button.click()
+    cart_page.wait_page_loaded()
+    # проверяем, что после нажатия на кнопку "Очистить корзину" появляется сообщение 'ВАША КОРЗИНА ПУСТА. ПОЧЕМУ?'
+    assert 'ВАША КОРЗИНА ПУСТА. ПОЧЕМУ?' in cart_page.empty_cart_text.get_text()
+
+
+# test36 Увеличить количество товарот в корзине
+@pytest.mark.positive
+def test_increase_num_of_items_in_cart(driver):
+    page = MainPage(driver)
+    page.accept_cookie.click()
+    page.add_to_cart.click()
+    page.wait_page_loaded()
+    page.cart.click()
+    cart_page = CartPage(driver, page.get_current_url())
+    cart_page.wait_page_loaded()
+    cart_page.item_increase_button.click()
+    cart_page.wait_page_loaded()
+    goods_quantity = int(cart_page.goods_quantity_input.get_attribute('value'))
+    assert goods_quantity == 2
+
+
+# test37 Очистить корзину
+# test38 Оформление покупки
+
+
+# test34 Переход на страницу Помощи
+
+
+# test35 Переход на главную страницу со страницы Помощи
+
+# test36 Успешный поиск по слову на странице Помощи
+# test37 Безрезультатный поиск по слову на странице Помощи
+# test38 Оформление покупки
+
+# test39 Удаление из корзины
+
+
+# test40 Переход в соц.сети
 
 
 
