@@ -26,3 +26,4 @@ class SearchResultPage(WebPage):
 
     # страница с ненайденным результатом поиска
     not_found_issue = WebElement(WebPage, css_selector='div.search-error h1')  # строка с сообщениемм 'Мы ничего не нашли по вашему запросу! Что делать?'
+
