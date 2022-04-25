@@ -11,14 +11,27 @@ from pages.favorites_page import FavoritesPage
 from pages.cart_page import CartPage
 from pages.compare_page import ComparetPage
 from pages.support_page import SupportPage
+from pages.help_page import HelpPage
 from pages.checkout_page import CheckoutPage
-from settings import valid_email, valid_password
+from settings import valid_email, valid_password, valid_phone
 from settings import project_url, discount_code, login, social_network
 from selenium.webdriver.common.action_chains import ActionChains
 
 
+def generate_string(num):
+    return "x" * num
 
-# test1 Проверка авторизация на сайте с помощью учетки Яндекс (!)
+def russian_chars():
+    return 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'
+
+def chinese_chars():
+    return '的一是不了人我在有他这为之大来以个中上们'
+
+def special_chars():
+    return '|\\/!@#$%^&*()-_=+`~?"№;:[]{}'
+
+
+# test1 Проверка авторизация на сайте с помощью учетки Яндекс
 @pytest.mark.positive
 def test_login_with_yandex(driver):
     page = MainPage(driver)
@@ -439,7 +452,7 @@ def test_ask_support(driver):
     assert message_for_support in support_page.posted_question.get_text()
 
 
-# test28 Отправить пусто сообщение в поддержку
+# test28 Отправить пустое сообщение в поддержку
 @pytest.mark.negative
 def test_send_empty_message_to_support(driver):
     message_for_support = ''
@@ -486,7 +499,7 @@ def test_success_search_in_my_messages(driver):
 # test30 Безрезультатный поиск по слову в своих сообщениях с поддержкой
 @pytest.mark.negative
 def test_unsuccessful_search_in_my_messages(driver):
-    search_request = 'zzz'
+    search_request = 'zzzzzz'
     support_page = SupportPage(driver)
     support_page.my_question_link.click()
     support_page.find_login.wait_to_be_clickable()
@@ -516,27 +529,24 @@ def test_success_search_in_public_messages(driver):
 # test32 Безрезультатный поиск по слову в публичных сообщениях с поддержкой
 @pytest.mark.negative
 def test_unsuccess_search_in_public_messages(driver):
-    search_request = 'zzz'
+    search_request = 'zzzzz'
     support_page = SupportPage(driver)
     support_page.ask_support_button.wait_to_be_clickable()
     support_page.search_here_input.send_keys(search_request)
     support_page.submit_request_button.click()
     support_page.wait_page_loaded()
     # проверяем что по найденному запросу сообщения не найдены
-    assert 'Переписки отсутствуют :(' in support_page.found_message.get_text()
+    assert 'Переписки отсутствуют' in support_page.not_found_messages_text.get_text()
 
 
 # test33 Переход на главную страницу со страницы поддержки
 @pytest.mark.negative
-def test_unsuccess_search_in_public_messages(driver):
-    search_request = 'zzz'
+def test_go_to_main_page_form_support_page(driver):
     support_page = SupportPage(driver)
-    support_page.ask_support_button.wait_to_be_clickable()
-    support_page.search_here_input.send_keys(search_request)
-    support_page.submit_request_button.click()
-    support_page.wait_page_loaded()
-    # проверяем что по найденному запросу сообщения не найдены
-    assert 'Переписки отсутствуют :(' in support_page.found_message.get_text()
+    support_page.logo.wait_to_be_clickable()
+    support_page.logo.click()
+    # проверяем что по нажатию на логотип происходит возврат на главную страницу
+    assert support_page.get_current_url() == project_url
 
 
 # test34 Оформление покупки
@@ -572,7 +582,7 @@ def test_clear_cart(driver):
     assert 'ВАША КОРЗИНА ПУСТА. ПОЧЕМУ?' in cart_page.empty_cart_text.get_text()
 
 
-# test36 Увеличить количество товарот в корзине
+# test36 Увеличить количество товара в корзине
 @pytest.mark.positive
 def test_increase_num_of_items_in_cart(driver):
     page = MainPage(driver)
@@ -588,24 +598,202 @@ def test_increase_num_of_items_in_cart(driver):
     assert goods_quantity == 2
 
 
-# test37 Очистить корзину
-# test38 Оформление покупки
+# test37 Увеличить, затем уменьшить количество товара в  корзине
+@pytest.mark.positive
+def test_increase_num_of_items_in_cart(driver):
+    page = MainPage(driver)
+    page.accept_cookie.click()
+    page.add_to_cart.click()
+    page.wait_page_loaded()
+    page.cart.click()
+    cart_page = CartPage(driver, page.get_current_url())
+    cart_page.wait_page_loaded()
+    cart_page.item_increase_button.click()
+    cart_page.wait_page_loaded()
+    cart_page.item_reduction_button.click()
+    cart_page.wait_page_loaded()
+    goods_quantity = int(cart_page.goods_quantity_input.get_attribute('value'))
+    assert goods_quantity == 1
 
 
-# test34 Переход на страницу Помощи
+# test38 Оформление покупки, ввод пустых значений в поля с именем и фамилией
+@pytest.mark.negative
+@pytest.mark.parametrize("empty_value", ['', ' '], ids=['empty', 'space'])
+def test_making_purchases_with_empty_data(driver, empty_value):
+    page = MainPage(driver)
+    page.accept_cookie.click()
+    page.add_to_cart.click()
+    page.cart.wait_to_be_clickable()
+    page.cart.click()
+    cart_page = CartPage(driver, page.get_current_url())
+    cart_page.go_to_checkout_buttont.wait_to_be_clickable()
+    cart_page.go_to_checkout_buttont.click()
+    cart_page.wait_page_loaded()
+    cart_page.name_input.send_keys(empty_value)
+    cart_page.surname_input.send_keys(empty_value)
+    cart_page.checkout_button.wait_to_be_clickable()
+    cart_page.checkout_button.click()
+    assert 'Имя обязательно' in cart_page.text_under_name_input.get_text()
+    assert 'Фамилия обязательна' in cart_page.text_under_surname_input.get_text()
 
 
-# test35 Переход на главную страницу со страницы Помощи
+# test39 Оформление покупки, ввод невалидных значений в поля с именем и фамилией
+@pytest.mark.negative
+@pytest.mark.parametrize("invalid_value", ['1', special_chars(), chinese_chars()],
+                         ids=['number', 'special_chars', 'chinese_chars'])
+def test_making_purchases_with_empty_data(driver, invalid_value):
+    page = MainPage(driver)
+    page.accept_cookie.click()
+    page.add_to_cart.click()
+    page.cart.wait_to_be_clickable()
+    page.cart.click()
+    cart_page = CartPage(driver, page.get_current_url())
+    cart_page.go_to_checkout_buttont.wait_to_be_clickable()
+    cart_page.go_to_checkout_buttont.click()
+    cart_page.wait_page_loaded()
+    cart_page.name_input.send_keys(invalid_value)
+    cart_page.surname_input.send_keys(invalid_value)
+    cart_page.checkout_button.wait_to_be_clickable()
+    cart_page.checkout_button.click()
+    assert 'Разрешены только буквы' in cart_page.text_under_name_input.get_text()
+    assert 'Разрешены только буквы' in cart_page.text_under_surname_input.get_text()
 
-# test36 Успешный поиск по слову на странице Помощи
-# test37 Безрезультатный поиск по слову на странице Помощи
-# test38 Оформление покупки
 
-# test39 Удаление из корзины
+# test40 Оформление покупки, ввод длинных значений в поля с именем и фамилией
+@pytest.mark.negative
+def test_making_purchases_with_long_data(driver):
+    long_text = generate_string(100)
+    page = MainPage(driver)
+    page.accept_cookie.click()
+    page.add_to_cart.click()
+    page.cart.wait_to_be_clickable()
+    page.cart.click()
+    cart_page = CartPage(driver, page.get_current_url())
+    cart_page.go_to_checkout_buttont.wait_to_be_clickable()
+    cart_page.go_to_checkout_buttont.click()
+    cart_page.wait_page_loaded()
+    cart_page.name_input.send_keys(long_text)
+    cart_page.surname_input.send_keys(long_text)
+    cart_page.checkout_button.wait_to_be_clickable()
+    cart_page.checkout_button.click()
+    assert 'Можно указать не более 50 символов' in cart_page.text_under_name_input.get_text()
+    assert 'Можно указать не более 50 символов' in cart_page.text_under_surname_input.get_text()
 
 
-# test40 Переход в соц.сети
+# test41 Проверка ввода валидного зарегистрированного номера телефона
+@pytest.mark.positive
+def test_input_valid_phone_number(driver):
+    phone = valid_phone
+    page = MainPage(driver)
+    page.accept_cookie.click()
+    page.add_to_cart.click()
+    page.cart.wait_to_be_clickable()
+    page.cart.click()
+    cart_page = CartPage(driver, page.get_current_url())
+    cart_page.go_to_checkout_buttont.wait_to_be_clickable()
+    cart_page.go_to_checkout_buttont.click()
+    cart_page.wait_page_loaded()
+    cart_page.phone_input.scroll_to_element()
+    cart_page.phone_input.wait_to_be_clickable()
 
+    element = cart_page.get_phone_input(driver)
+    actions = ActionChains(driver)
+    actions.move_to_element(element).send_keys(phone).perform()
+
+    cart_page.checkout_button.wait_to_be_clickable()
+    cart_page.checkout_button.click()
+    assert 'Этот телефон уже есть в Лабиринте' in cart_page.text_under_phone_input.get_text()
+
+
+# test42 Проверка ввода невалидного номера телефона
+@pytest.mark.parametrize("invalid_phone", ['111', '+7111111111111', '++++++++', '----------', '()'],
+                         ids=['short_num', 'long_num', 'pluses', 'minuses', 'brackets'])
+@pytest.mark.negative
+def test_input_invalid_phone_number(driver, invalid_phone):
+    phone = invalid_phone
+    page = MainPage(driver)
+    page.accept_cookie.click()
+    page.add_to_cart.click()
+    page.cart.wait_to_be_clickable()
+    page.cart.click()
+    cart_page = CartPage(driver, page.get_current_url())
+    cart_page.go_to_checkout_buttont.wait_to_be_clickable()
+    cart_page.go_to_checkout_buttont.click()
+    cart_page.wait_page_loaded()
+    cart_page.phone_input.scroll_to_element()
+    cart_page.phone_input.wait_to_be_clickable()
+
+    element = cart_page.get_phone_input(driver)
+    actions = ActionChains(driver)
+    actions.move_to_element(element).send_keys(phone).perform()
+
+    cart_page.checkout_button.wait_to_be_clickable()
+    cart_page.checkout_button.click()
+    assert 'Ошибка в номере телефона' in cart_page.text_under_phone_input.get_text()
+
+
+# test43 Проверка ввода невалидных данных в поле для телефона
+@pytest.mark.parametrize("invalid_symbols", [' ', 'abc', 'абв'], ids=['space', 'eng_letters', 'ru_letters'])
+@pytest.mark.negative
+def test_input_invalid_value_in_phone_field(driver, invalid_symbols):
+    phone = invalid_symbols
+    page = MainPage(driver)
+    page.accept_cookie.click()
+    page.add_to_cart.click()
+    page.cart.wait_to_be_clickable()
+    page.cart.click()
+    cart_page = CartPage(driver, page.get_current_url())
+    cart_page.go_to_checkout_buttont.wait_to_be_clickable()
+    cart_page.go_to_checkout_buttont.click()
+    cart_page.wait_page_loaded()
+    cart_page.phone_input.scroll_to_element()
+    cart_page.phone_input.wait_to_be_clickable()
+
+    element = cart_page.get_phone_input(driver)
+    actions = ActionChains(driver)
+    actions.move_to_element(element).send_keys(phone).perform()
+
+    cart_page.checkout_button.wait_to_be_clickable()
+    cart_page.checkout_button.click()
+    assert 'Телефон обязателен' in cart_page.text_under_phone_input.get_text()
+
+
+# test44 Успешный поиск по слову на странице Помощи
+@pytest.mark.positive
+def test_success_search_in_help(driver):
+    search_request = 'доставка'
+    help_page = HelpPage(driver)
+    help_page.search_input.wait_to_be_clickable()
+    help_page.search_input.send_keys(search_request)
+    help_page.find_button.click()
+    help_page.wait_page_loaded()
+    search_request_in_head_found_post = search_request in help_page.found_post_head.get_text()
+    search_request_in_body_found_post = search_request in help_page.found_post_body_preview.get_text()
+    # проверяем что в найденных сообщениях содержится искомое слово
+    assert search_request_in_head_found_post or search_request_in_body_found_post
+
+
+# test45 Безрезультатный поиск по слову на странице Помощи
+@pytest.mark.negative
+def test_unsuccess_search_in_help(driver):
+    search_request = 'fffffffff'
+    help_page = HelpPage(driver)
+    help_page.search_input.wait_to_be_clickable()
+    help_page.search_input.send_keys(search_request)
+    help_page.find_button.click()
+    help_page.wait_page_loaded()
+    # проверяем что по запросу ничего не нашлось
+    assert 'Поиск в разделе Помощь не дал результатов' in help_page.not_found_post_message.get_text()
+
+
+# test46 Переход на главную страницу со страницы Помощи
+@pytest.mark.negative
+def test_unsuccess_search_in_help(driver):
+    help_page = HelpPage(driver)
+    help_page.logo.wait_to_be_clickable()
+    help_page.logo.click()
+    # проверяем что по нажатию на логотип происходит возврат на главную страницу
+    assert help_page.get_current_url() == project_url
 
 
 

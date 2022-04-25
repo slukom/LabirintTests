@@ -5,10 +5,12 @@ favorites_url = 'https://www.labirint.ru/cabinet/putorder/'
 cart_url = 'https://www.labirint.ru/cart/'
 compare_url = 'https://www.labirint.ru/compare/'
 support_url = 'https://www.labirint.ru/support/'
+help_url = 'https://www.labirint.ru/help/'
 checkout_page = 'https://www.labirint.ru/basket/checkout/'
 discount_code = '2F28-4435-9769'
 email = 'test.21.03.2022@test.test'
 login = 'Test'
+valid_phone = '+79876543210'
 
 social_network = {
     'vk': 'https://vk.com/labirint_ru',

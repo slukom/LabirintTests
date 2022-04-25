@@ -16,6 +16,7 @@ class SupportPage(WebPage):
             url = support_url
         super().__init__(driver, url)
 
+    logo = WebElement(WebPage, css_selector='a.b-header-b-logo-e-logo-wrap')
     ask_support_button = WebElement(WebPage, css_selector = 'a.support-question.sm-greater') # кнопка "Задать вопрос"
     posted_question = WebElement(WebPage, css_selector = 'div.message-text') # отправленный вопрос
     no_correspondence_text = WebElement(WebPage, css_selector = 'div.count-0')
@@ -24,6 +25,7 @@ class SupportPage(WebPage):
     submit_request_button = WebElement(WebPage, css_selector = 'form#search_support span')  # кнпокпа отправления запроса
 
     found_message =  WebElement(WebPage, css_selector = 'div.topic div.message-text')
+    not_found_messages_text = WebElement(WebPage, css_selector = 'div.topics div.count-0')
     # модальная страница для авторизации
     find_login = WebElement(WebPage, css_selector='.full-input__input.formvalidate-error')  # поле для ввода логина (тел, емэйл, код скидки)
     input_button = WebElement(WebPage, id='g-recap-0-btn')  # кнопка "Войти"
