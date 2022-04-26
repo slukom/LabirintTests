@@ -17,8 +17,6 @@ Python и Selenium.
 
     pip install pytest-selenium
 
-В Pycharm выбрать File - Settings - Python Interpreter - Добавить pytest-selenium 
-(кликнуть на знак “+” в правом меню, и выбрать pytest-selenium — Установка)
-Для запуска в консоли выполнить команду: 
+Для запуска выполнить команду: 
 
     python3 -m pytest -v --driver Chrome --driver-path /drivers/chromedriver tests/test_for_labirint.py
